@@ -5,65 +5,76 @@ import sqlite3
 connection = sqlite3.connect('microblog.db') # Conexao do banco de dados
 cursor = connection.cursor() # Cursor para executar queries
 
-# Restrict to a particular path.
+# Permite varios usuarios
 class RequestHandler(SimpleXMLRPCRequestHandler):
     rpc_paths = ('/RPC2',)
 
-# Create server
-server = SimpleXMLRPCServer(("localhost", 8596),
+# Cria o Elemento Servidor
+server = SimpleXMLRPCServer(("localhost", 8000),
                             requestHandler=RequestHandler)
 server.register_introspection_functions()
 
+# Id para os posts 
+id_post = 0
+
 # Cria tabela Topico
-cursor.execute('''CREATE TABLE topico
-					(username varchar(50), sod int, cc int, cd int, PRIMARY KEY username)''')
+try:
+	cursor.execute("CREATE TABLE topico (username varchar(50) PRIMARY KEY, sod int, cc int, cd int)")
+except:
+	cursor.execute("DROP TABLE topico") # dropa a tabela caso ela ja exista
+	cursor.execute("CREATE TABLE topico (username varchar(50) PRIMARY KEY, sod int, cc int, cd int)")
 
 # Cria tabela Post
-cursor.execute('''CREATE TABLE post
-					(id int, time timestamp, username varchar(50), topico varchar(5), texto varchar(100), PRIMARY KEY id)''')
+try:
+	cursor.execute("CREATE TABLE post (username varchar(50) PRIMARY KEY, sod int, cc int, cd int)")
+except:
+	cursor.execute("DROP TABLE post") # dropa a tabela caso ela ja exista
+	cursor.execute("CREATE TABLE post (id int PRIMARY KEY, time timestamp, username varchar(50), topico varchar(5), texto varchar(100))")
 
-
-def Follow (username,topico):
-	c.execute('SELECT * FROM topico WHERE username=?', username)
-	x =  c.fetchone()
-	
+#Usuario segue um Topico
+def Follow (nome,topico):
+	cursor.execute("SELECT * FROM topico WHERE username=(?)", (nome,))
+	x =  cursor.fetchone()
 	if x == None:
 		if (topico == "#sod"):
-			c.execute("INSERT INTO topico VALUES (?,?,?)",username,1,0,0)
+			cursor.execute("INSERT INTO topico VALUES (?,?,?,?)",(nome,1,0,0,))
+			print(nome)
 		elif (topico == "#cc"):
-			c.execute("INSERT INTO topico VALUES (?,?,?)",username,0,1,0)
+			cursor.execute("INSERT INTO topico VALUES (?,?,?,?)",(nome,0,1,0,))
 		elif (topico == "#cd"):
-			c.execute("INSERT INTO topico VALUES (?,?,?)",username,0,0,1)
+			cursor.execute("INSERT INTO topico VALUES (?,?,?,?)",(nome,0,0,1,))
 		else:
 			return 1
 	else:
 		if (topico == "#sod"):
-			c.execute("UPDATE topico SET sod=1 WHERE username=?",username)
+			cursor.execute("UPDATE topico SET sod=1 WHERE username=(?)",(nome,))
 		elif (topico == "#cc"):
-			c.execute("UPDATE topico SET cc=1 WHERE username=?",username)
+			cursor.execute("UPDATE topico SET cc=1 WHERE username=(?)",(nome,))
 		elif (topico == "#cd"):
-			c.execute("UPDATE topico SET cd=1 WHERE username=?",username)
+			cursor.execute("UPDATE topico SET cd=1 WHERE username=(?)",(nome,))
 		else:
-			return 1
+			return 2
+	
+	connection.commit()
 	return 0
 	
-server.register_function(Follow())
+server.register_function(Follow, 'follow')
 
 def Unsubscribe(nome, topico):
 
 	try:
-		cursor.execute('SELECT username FROM topico WHERE username=?,topico=?)', nome, topico) # procura o usuario que deixou de seguir o post
+		cursor.execute('SELECT username FROM topico WHERE username=(?),topico=(?))', (nome,), (topico,)) # procura o usuario que deixou de seguir o post
 		usuario = cursor.fetchone()
 	except:
 		print('Falha ao executar select query.')
 
 	try:
 		if(topico == "#sod"):
-			cursor.execute('UPDATE topico SET sod=0 WHERE username=?',usuario) # seta 0 no campo do topico o qual o usuario parou de seguir
+			cursor.execute('UPDATE topico SET sod=0 WHERE username=(?)',(usuario,)) # seta 0 no campo do topico o qual o usuario parou de seguir
 		elif(topico == "#cc"):
-			cursor.execute('UPDATE topico SET cc=0 WHERE username=?',usuario) # seta 0 no campo do topico o qual o usuario parou de seguir
+			cursor.execute('UPDATE topico SET cc=0 WHERE username=(?)',(usuario,)) # seta 0 no campo do topico o qual o usuario parou de seguir
 		elif(topico == "#cd"):
-			cursor.execute('UPDATE topico SET cd=0 WHERE username=?',usuario) # seta 0 no campo do topico o qual o usuario parou de seguir
+			cursor.execute('UPDATE topico SET cd=0 WHERE username=(?)',(usuario,)) # seta 0 no campo do topico o qual o usuario parou de seguir
 	except:
 		print('Falha ao atualizar a tabela topico.')
 
@@ -73,52 +84,41 @@ def Unsubscribe(nome, topico):
 server.register_function(Unsubscribe, 'unsubscribe')
 
 # funçao que ira inserir no banco de posts
-def insere_post(id_post,username,topico,timestamp,texto):
+def InserePost(nome,topico,timestamp,texto):
 	try:
-		c.execute("INSERT INTO post VALUES (?,?,'?','?','?',?)",int(id_post),timestamp,username,topico,texto)
-		conn.commit()
+		cursor.execute("INSERT INTO post VALUES (?,?,?,?,?,?)",(id_post,timestamp,nome,topico,texto,))
+		connection.commit()
+		id_post = id_post + 1
 		return 1
 	except: 
 		return 0
 		
-server.register_function(insere_post())
+server.register_function(InserePost, 'inserePost')
 
 def RetrieveTime(nome, tempo):
 	
 	try:
-		cursor.execute('SELECT texto FROM post WHERE username=?,time>?)', nome, tempo) # procura todos os posts de um determinado usuario a partir do tempo especificado
+		cursor.execute('SELECT texto FROM post WHERE username=(?),time>(?))', (nome,), (tempo,)) # procura todos os posts de um determinado usuario a partir do tempo especificado
 		posts = cursor.fetchall()
 	except:
 		print('Falha ao executar select query.')
 
-	try:
-		for row in posts:
-			print(row + '\n') # printa na tela os posts
-	except:
-		print('Falha ao atualizar a tabela topico.')
-
-	return 1
+	return posts # retorna posts encontrados
 
 server.register_function(RetrieveTime, 'retrieveTime')
 
 def RetrieveTopic(nome, tempo, topico):
 	
 	try:
-		cursor.execute('SELECT texto FROM post WHERE username=?,time>?,topico=?', nome, tempo, topico) # procura todos os posts de um determinado usuario e topico a partir do tempo especificado
+		cursor.execute('SELECT texto FROM post WHERE username=(?),time>(?),topico=(?)', (nome,), (tempo,), (topico,)) # procura todos os posts de um determinado usuario e topico a partir do tempo especificado
 		posts = cursor.fetchall()
 	except:
 		print('Falha ao executar select query.')
 
-	try:
-		for row in posts:
-			print(row + '\n') # printa na tela os posts
-	except:
-		print('Falha ao atualizar a tabela topico.')
-
-	return 1
+	return posts # retorna posts encontrados
 
 server.register_function(RetrieveTopic, 'retrieveTopic')
 
-connection.close() # fecha conexao com o banco de dados
-# Run the server's main loop
-server.serve_forever()
+#connection.close() # fecha conexao com o banco de dados
+
+server.serve_forever() # faz a parte Servidor rodar em loop e funcionar ate o fim da execucao do programa
