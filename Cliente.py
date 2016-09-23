@@ -1,14 +1,15 @@
 import xmlrpc.client
 from tkinter import *
-from datetime import datetime
+from datetime import datetime, date, time
 
-s = xmlrpc.client.ServerProxy('http://localhost:8000')
+s = xmlrpc.client.ServerProxy('http://192.168.0.103:8000')
 
 #funções que estão no servidor
 #Follow
 def inserir_usuario():
     nome = ("@"+usuario1.get())
     topico = ("#"+topico1.get())
+    print(nome)
     l = s.follow(nome,topico)
 
 #post
@@ -16,8 +17,9 @@ def envia_post():
 	nome = ("@"+usuario2.get())
 	topico = ("#"+topico2.get())
 	texto = (post2.get())
-	par3 = datetime.now()
-	l = s.inserePost(nome, topico, par3, texto)
+	hj = date.today()
+	print(hj)
+	l = s.inserePost(nome,topico,str(hj),texto)
 
 #unsubscribe
 def deixar_topico():
@@ -29,7 +31,9 @@ def deixar_topico():
 def recupera_tudo():
 	nome = ("@"+usuario4.get())
 	par3 = (data4.get())
+	print(par3)
 	variavel = s.retrieveTime(nome,par3)
+	print(variavel)
 
 #retrievetopic
 def recupera_topico():
@@ -99,13 +103,13 @@ bt4.place(x=450,y=280)
 ##caixa de texto onde será inserido o @Username
 usuario4 = Entry(janela)
 usuario4.place(x=495,y=310)
-lb2 = Label(janela,text="Nome")
-lb2.place(x=450,y=310)
+lb4 = Label(janela,text="Nome")
+lb4.place(x=450,y=310)
 ##caixa de texto onde será inserido a data
 data4 = Entry(janela)
 data4.place(x=820,y=310)
-lb2 = Label(janela,text="Data(ex: aaaa-mm-dd):")
-lb2.place(x=670,y=310)
+lb4_4 = Label(janela,text="Data(ex: aaaa-mm-dd):")
+lb4_4.place(x=670,y=310)
 
 ##O usuário recupera todos os posts, apenas do tópico identificado
 bt5 = Button(janela, width=60,text="Recupera todos os posts de um determinado tópico", command=recupera_topico)
@@ -118,13 +122,13 @@ lb5.place(x=450,y=370)
 ##caixa de texto onde será inserido o #tópico
 topico5 = Entry(janela)
 topico5.place(x=720,y=370)
-lb3_5 = Label(janela, text = "Tópico:")
-lb3_5.place(x=670,y=370)
+lb5_5 = Label(janela, text = "Tópico:")
+lb5_5.place(x=670,y=370)
 ##caixa de texto onde será inserido a data
-data4 = Entry(janela)
-data4.place(x=1040,y=370)
-lb2 = Label(janela,text="Data(ex: aaaa-mm-dd):")
-lb2.place(x=890,y=370)
+data5 = Entry(janela)
+data5.place(x=1040,y=370)
+lb5 = Label(janela,text="Data(ex: aaaa-mm-dd):")
+lb5.place(x=890,y=370)
 
 ##método que executa a interface gráfica
 janela.mainloop()
