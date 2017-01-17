@@ -1,0 +1,4 @@
+1- executar 1º servidor
+2- executar 2º servidor
+3- executar Disparador
+4- executar cliente

@@ -4,7 +4,7 @@ from xmlrpc.server import SimpleXMLRPCRequestHandler
 import sqlite3
 import datetime
 
-connection = sqlite3.connect('microblog.db') # Conexao do banco de dados
+connection = sqlite3.connect('microblog2.db') # Conexao do banco de dados
 cursor = connection.cursor() # Cursor para executar queries
 
 # Permite varios usuarios
@@ -12,7 +12,7 @@ class RequestHandler(SimpleXMLRPCRequestHandler):
     rpc_paths = ('/RPC2',)
 
 # Cria o Elemento Servidor
-server = SimpleXMLRPCServer(("localhost", 8591),
+server = SimpleXMLRPCServer(("localhost", 8592),
                             requestHandler=RequestHandler)
 server.register_introspection_functions()
 
