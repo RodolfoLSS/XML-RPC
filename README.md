@@ -1,3 +1,3 @@
 # XML-RPC
 
-Leia como-rodar.py
+Leia como_rodar.py
